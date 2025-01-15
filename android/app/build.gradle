@@ -1,0 +1,53 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin" // Flutter plugin
+    id "com.google.gms.google-services" // Firebase plugin
+}
+
+android {
+    namespace = "com.example.homeeaseapp" // Android namespace
+    compileSdk = 34
+    ndkVersion = flutter.ndkVersion
+
+
+    defaultConfig {
+        applicationId = "com.example.homeeaseapp"
+        minSdk = 23
+        targetSdk = 33
+        versionCode = 1
+        versionName = "1.0"
+        multiDexEnabled true
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            signingConfig signingConfigs.debug // Add signing configuration if needed
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
+
+flutter {
+    source = "../.." // Adjust if necessary
+}
+
+dependencies {
+    implementation platform("com.google.firebase:firebase-bom:33.7.0") // Firebase BOM
+    implementation "com.google.firebase:firebase-analytics"
+    implementation "com.google.firebase:firebase-auth"
+    implementation "com.google.firebase:firebase-firestore"
+}
+
+apply plugin: 'com.google.gms.google-services' // Apply Google services plugin last
