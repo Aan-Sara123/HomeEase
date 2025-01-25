@@ -19,13 +19,20 @@ class _LoginPageState extends State<LoginPage> {
   String? _errorMessage;
 
   Future<void> login() async {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      setState(() {
+        _errorMessage = 'Email and password cannot be empty.';
+      });
+      return;
+    }
+
     try {
       await _auth.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
-      if (!mounted) return;
+      if (!mounted) return; // Prevent using context if the widget is unmounted.
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const HomePage()),
@@ -125,4 +132,3 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 }
-

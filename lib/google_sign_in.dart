@@ -1,8 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:logger/logger.dart';
 
 class GoogleSignInService {
   static final GoogleSignIn _googleSignIn = GoogleSignIn();
+  static final Logger _logger = Logger(); // Initialize Logger instance
 
   /// Signs in a user with Google
   static Future<User?> signInWithGoogle() async {
@@ -12,6 +14,7 @@ class GoogleSignInService {
 
       if (googleUser == null) {
         // User canceled the sign-in
+        _logger.i('Google Sign-In canceled by the user.');
         return null;
       }
 
@@ -29,12 +32,13 @@ class GoogleSignInService {
       final UserCredential userCredential =
           await FirebaseAuth.instance.signInWithCredential(credential);
 
+      _logger.i('Google Sign-In successful for user: ${userCredential.user?.email}');
       return userCredential.user;
     } on FirebaseAuthException catch (e) {
-      print('FirebaseAuthException: ${e.message}');
+      _logger.e('FirebaseAuthException during Google Sign-In: ${e.message}');
       return null;
     } catch (e) {
-      print('General Exception: $e');
+      _logger.e('Exception during Google Sign-In: $e');
       return null;
     }
   }
@@ -44,8 +48,9 @@ class GoogleSignInService {
     try {
       await _googleSignIn.signOut();
       await FirebaseAuth.instance.signOut();
+      _logger.i('User signed out from Google and Firebase.');
     } catch (e) {
-      print('Error during Google Sign-Out: $e');
+      _logger.e('Error during Google Sign-Out: $e');
     }
   }
 
@@ -53,8 +58,9 @@ class GoogleSignInService {
   static Future<void> disconnectFromGoogle() async {
     try {
       await _googleSignIn.disconnect();
+      _logger.i('Google account disconnected successfully.');
     } catch (e) {
-      print('Error during Google Disconnect: $e');
+      _logger.e('Error during Google Disconnect: $e');
     }
   }
 }
