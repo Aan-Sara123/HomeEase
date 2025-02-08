@@ -1,58 +1,55 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'firestore_service.dart'; // Assumes you have a Firestore service to save user data
+import 'firestore_service.dart';
+import 'dart:developer';
+import 'login_page1.dart';
 
-/// Location Service - Fetch location from phone number
 class LocationService {
   static const String apiUrl = 'https://phonevalidation.abstractapi.com/v1/';
-  static const String apiKey = 'b25cc1e2e72c4c0a85e03210644ec208'; // Your API key
+  static const String apiKey = 'b25cc1e2e72c4c0a85e03210644ec208';
 
-  // Fetch location from phone number
- static Future<Map<String, dynamic>> getLocation(String phoneNumber) async {
-  final url = Uri.parse('$apiUrl?api_key=$apiKey&phone=$phoneNumber');
+  static Future<Map<String, dynamic>> getLocation(String phoneNumber) async {
+    final url = Uri.parse('$apiUrl?api_key=$apiKey&phone=$phoneNumber');
 
-  try {
-    final response = await http.get(url);
+    try {
+      final response = await http.get(url);
 
-    print('Response Status: ${response.statusCode}');
-    print('Response Body: ${response.body}'); // Debugging: Log the raw response
+      log('Response Status: ${response.statusCode}');
+      log('Response Body: ${response.body}');
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        String location = data['location'] ?? 'Unknown';
+        String region = data['country']?['name'] ?? 'Unknown';
 
-      // Extract location and country
-      String location = data['location'] ?? 'Unknown'; // Full location string
-      String region = data['country']?['name'] ?? 'Unknown'; // Country name
+        if (location.contains(',')) {
+          location = location.split(',').first.trim();
+        }
 
-      // If the location contains a comma (e.g., "State, India"), split and take the state
-      if (location.contains(',')) {
-        location = location.split(',').first.trim();
+        return {
+          'city': location,
+          'region': region,
+        };
+      } else {
+        log('Error: ${response.body}');
+        throw Exception('Failed to fetch location');
       }
-
-      return {
-        'city': location, // Now 'city' contains only the state
-        'region': region, // Country name
-      };
-    } else {
-      print('Error: ${response.body}');
-      throw Exception('Failed to fetch location');
+    } catch (e) {
+      log('Exception: $e');
+      return {'city': 'Unknown', 'region': 'Unknown'};
     }
-  } catch (e) {
-    print('Exception: $e');
-    return {'city': 'Unknown', 'region': 'Unknown'};
   }
 }
-}
-/// User Registration - Handles User Registration logic
+
 class UserRegistration extends StatefulWidget {
   const UserRegistration({super.key});
 
   @override
-  _UserRegistrationState createState() => _UserRegistrationState();
+  UserRegistrationState createState() => UserRegistrationState();
 }
 
-class _UserRegistrationState extends State<UserRegistration> {
+class UserRegistrationState extends State<UserRegistration> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -60,14 +57,16 @@ class _UserRegistrationState extends State<UserRegistration> {
   final FirestoreService _firestoreService = FirestoreService();
 
   bool _isFetchingLocation = false;
+  String _selectedCountryCode = '+1';
 
-  // Fetch location based on phone number
+  final List<String> _countryCodes = ['+1', '+44', '+91', '+61', '+81', '+86'];
+
   Future<void> _fetchLocation() async {
-    final phoneNumber = _phoneController.text;
-    if (phoneNumber.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Please enter a phone number first'),
-      ));
+    final phoneNumber = '$_selectedCountryCode${_phoneController.text}';
+    if (_phoneController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a phone number first')),
+      );
       return;
     }
 
@@ -77,8 +76,7 @@ class _UserRegistrationState extends State<UserRegistration> {
 
     setState(() {
       _isFetchingLocation = false;
-      _locationController.text =
-          '${locationData['city']}, ${locationData['region']}';
+      _locationController.text = '${locationData['city']}, ${locationData['region']}';
     });
   }
 
@@ -86,7 +84,7 @@ class _UserRegistrationState extends State<UserRegistration> {
     if (_formKey.currentState?.validate() ?? false) {
       final Map<String, dynamic> userData = {
         'name': _nameController.text,
-        'phoneNumber': _phoneController.text,
+        'phoneNumber': '$_selectedCountryCode${_phoneController.text}',
         'location': _locationController.text,
       };
 
@@ -100,65 +98,159 @@ class _UserRegistrationState extends State<UserRegistration> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('User Registration')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Card(
-          elevation: 5,
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Register New User',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+      appBar: AppBar(
+        title: const Text('User Registration', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: Colors.teal,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.teal, Colors.white],
+          ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20.0),
+            child: Card(
+              elevation: 10,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              child: Padding(
+                padding: const EdgeInsets.all(25.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Center(
+                        child: Text(
+                          'Register New User',
+                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.teal),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: _nameController,
+                        decoration: InputDecoration(
+                          labelText: 'Name',
+                          labelStyle: const TextStyle(color: Colors.teal),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: Colors.teal),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: Colors.teal, width: 2),
+                          ),
+                        ),
+                        validator: (value) => value?.isEmpty ?? true ? 'Please enter a name' : null,
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          DropdownButton<String>(
+                            value: _selectedCountryCode,
+                            onChanged: (String? newValue) {
+                              setState(() => _selectedCountryCode = newValue!);
+                            },
+                            items: _countryCodes.map<DropdownMenuItem<String>>(
+                              (String value) => DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value, style: const TextStyle(color: Colors.teal)),
+                              ),
+                            ).toList(),
+                            dropdownColor: Colors.white,
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.teal),
+                            style: const TextStyle(color: Colors.teal),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _phoneController,
+                              decoration: InputDecoration(
+                                labelText: 'Phone Number',
+                                labelStyle: const TextStyle(color: Colors.teal),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: const BorderSide(color: Colors.teal),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: const BorderSide(color: Colors.teal, width: 2),
+                                ),
+                              ),
+                              keyboardType: TextInputType.phone,
+                              validator: (value) => value?.isEmpty ?? true ? 'Please enter a phone number' : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: _isFetchingLocation ? null : _fetchLocation,
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 50),
+                          backgroundColor: Colors.teal,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: _isFetchingLocation
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text('Fetch Location', style: TextStyle(fontSize: 16)),
+                      ),
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: _locationController,
+                        decoration: InputDecoration(
+                          labelText: 'Location',
+                          labelStyle: const TextStyle(color: Colors.teal),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: Colors.teal),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: Colors.teal, width: 2),
+                          ),
+                        ),
+                        readOnly: true,
+                      ),
+                      const SizedBox(height: 30),
+                      Center(
+                        child: ElevatedButton(
+                          onPressed: _registerUser,
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 50),
+                            backgroundColor: Colors.teal,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: const Text('Register', style: TextStyle(fontSize: 18)),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Center(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const LoginPage()),
+                            );
+                          },
+                          child: const Text(
+                            'Already Registered? Login Here',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.teal),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(labelText: 'Name'),
-                    validator: (value) =>
-                        value?.isEmpty ?? true ? 'Please enter a name' : null,
-                  ),
-                  TextFormField(
-                    controller: _phoneController,
-                    decoration: const InputDecoration(
-                      labelText: 'Phone Number',
-                    ),
-                    keyboardType: TextInputType.phone,
-                    validator: (value) =>
-                        value?.isEmpty ?? true ? 'Please enter a phone number' : null,
-                  ),
-                  const SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: _isFetchingLocation ? null : _fetchLocation,
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 40),
-                    ),
-                    child: _isFetchingLocation
-                        ? const CircularProgressIndicator()
-                        : const Text('Fetch Location'),
-                  ),
-                  const SizedBox(height: 10),
-                  TextFormField(
-                    controller: _locationController,
-                    decoration: const InputDecoration(labelText: 'Location'),
-                    readOnly: true, // User can't edit this field
-                    validator: (value) =>
-                        value?.isEmpty ?? true ? 'Please fetch location' : null,
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _registerUser,
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 40),
-                    ),
-                    child: const Text('Register'),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
