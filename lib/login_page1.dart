@@ -1,4 +1,3 @@
-// login_page.dart
 import 'package:flutter/material.dart';
 import 'firestore_service.dart';
 import 'services_page.dart';
@@ -7,10 +6,10 @@ class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
   @override
-  _LoginPageState createState() => _LoginPageState();
+  LoginPageState createState() => LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class LoginPageState extends State<LoginPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final FirestoreService _firestoreService = FirestoreService();
@@ -19,7 +18,9 @@ class _LoginPageState extends State<LoginPage> {
     final name = _nameController.text.trim();
     final phone = _phoneController.text.trim();
 
+    // Check if inputs are empty
     if (name.isEmpty || phone.isEmpty) {
+      if (!mounted) return; // Ensure State is mounted before using context
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter both name and phone number')),
       );
@@ -27,7 +28,10 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     try {
+      // Attempt to get user from Firestore
       final user = await _firestoreService.getUserByNameAndPhone(name, phone);
+
+      if (!mounted) return; // Check if State is still mounted
 
       if (user != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -43,6 +47,7 @@ class _LoginPageState extends State<LoginPage> {
         );
       }
     } catch (e) {
+      if (!mounted) return; // Check if State is still mounted
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: ${e.toString()}')),
       );

@@ -18,7 +18,7 @@ class _LoginPageState extends State<LoginPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   String? _errorMessage;
 
-  Future<void> login() async {
+  Future<void> _performLogin() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       setState(() {
         _errorMessage = 'Email and password cannot be empty.';
@@ -32,15 +32,50 @@ class _LoginPageState extends State<LoginPage> {
         password: _passwordController.text.trim(),
       );
 
-      if (!mounted) return; // Prevent using context if the widget is unmounted.
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomePage()),
-      );
+      // Call navigation in a separate synchronous function
+      _navigateToHomePage();
     } on FirebaseAuthException catch (e) {
-      setState(() {
-        _errorMessage = e.message;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.message;
+        });
+      }
+    }
+  }
+
+  void _navigateToHomePage() {
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const HomePage()),
+    );
+  }
+
+  void _navigateToSignUpPage() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const SignUpPage()),
+    );
+  }
+
+  void _navigateToForgotPasswordPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
+    );
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    final user = await GoogleSignInService.signInWithGoogle();
+
+    if (user != null) {
+      _navigateToHomePage();
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sign-in failed. Please try again.')),
+        );
+      }
     }
   }
 
@@ -74,45 +109,21 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: login,
+              onPressed: _performLogin,
               child: const Text('Log In'),
             ),
             const SizedBox(height: 10),
             TextButton(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SignUpPage()),
-                );
-              },
+              onPressed: _navigateToSignUpPage,
               child: const Text("Don't have an account? Sign Up"),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
-                );
-              },
+              onPressed: _navigateToForgotPasswordPage,
               child: const Text('Forgot your password?'),
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
-              onPressed: () async {
-                final user = await GoogleSignInService.signInWithGoogle();
-                if (user != null) {
-                  if (!mounted) return;
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const HomePage()),
-                  );
-                } else {
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Sign-in failed. Please try again.')),
-                  );
-                }
-              },
+              onPressed: _handleGoogleSignIn,
               style: ElevatedButton.styleFrom(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
