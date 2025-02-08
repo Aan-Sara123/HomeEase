@@ -6,30 +6,39 @@ class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
 
   @override
-  _SignUpPageState createState() => _SignUpPageState();
+  SignUpPageState createState() => SignUpPageState(); // Removed underscore to make it public
 }
 
-class _SignUpPageState extends State<SignUpPage> {
+class SignUpPageState extends State<SignUpPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   String? _errorMessage;
 
-  Future<void> signUp() async {
+  Future<void> _signUp() async {
     try {
       await _auth.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginPage()),
-      );
+
+      // Call navigation in a separate synchronous method
+      _navigateToLoginPage();
     } on FirebaseAuthException catch (e) {
-      setState(() {
-        _errorMessage = e.message;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.message;
+        });
+      }
     }
+  }
+
+  void _navigateToLoginPage() {
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+    );
   }
 
   @override
@@ -49,22 +58,19 @@ class _SignUpPageState extends State<SignUpPage> {
               controller: _emailController,
               decoration: const InputDecoration(labelText: 'Email'),
             ),
+            const SizedBox(height: 10),
             TextField(
               controller: _passwordController,
               obscureText: true,
               decoration: const InputDecoration(labelText: 'Password'),
             ),
+            const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: signUp,
+              onPressed: _signUp,
               child: const Text('Sign Up'),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                );
-              },
+              onPressed: _navigateToLoginPage,
               child: const Text('Already have an account? Log In'),
             ),
           ],
@@ -73,4 +79,3 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 }
-

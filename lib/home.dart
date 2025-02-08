@@ -1,9 +1,7 @@
-// home.dart
 import 'package:flutter/material.dart';
 import 'user_registration.dart';
-import 'vendor_registration.dart'; // Import the vendor registration page
+import 'vendor_registration.dart';
 import 'services_page.dart';
-import 'login_page1.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -85,35 +83,12 @@ class HomePage extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const VendorRegistration(), // Navigate to VendorRegistration
+                        builder: (context) => const VendorRegistration(),
                       ),
                     );
                   },
                   child: const Text(
                     'Register as a Vendor',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.teal,
-                    padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const LoginPage(),
-                      ),
-                    );
-                  },
-                  child: const Text(
-                    'Login',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
