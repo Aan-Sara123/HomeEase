@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'user_registration.dart';
+import 'users/registration/user_registration.dart';
 import 'vendor_registration.dart';
-import 'services_page.dart';
+import 'users/services_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});

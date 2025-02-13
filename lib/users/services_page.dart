@@ -1,5 +1,5 @@
  import 'package:flutter/material.dart';
-import 'profile_page.dart';
+import 'profile/profile_page.dart';
 import 'service_category_card.dart';
 import 'service_grid_card.dart';
 import 'custom_bottom_navbar.dart';
