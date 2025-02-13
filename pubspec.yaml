@@ -1,13 +1,10 @@
 name: homeeaseapp
 description: "A new Flutter project."
 
-# Prevent accidental publication to pub.dev
 publish_to: 'none'
 
-# Application version
 version: 1.0.0+1
 
-# Dart SDK version
 environment:
   sdk: ^3.5.4
 
@@ -31,3 +28,9 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/cleaning.jpg
+    - assets/images/electronic_repairs.jpg
+    - assets/images/plumbing.jpg
+    - assets/images/appliance_repairs.jpg
+
