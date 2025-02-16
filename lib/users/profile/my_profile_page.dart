@@ -1,9 +1,7 @@
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'profile_service.dart';
 
 class MyProfilePage extends StatefulWidget {
   const MyProfilePage({super.key});
@@ -13,8 +11,7 @@ class MyProfilePage extends StatefulWidget {
 }
 
 class _MyProfilePageState extends State<MyProfilePage> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final ProfileService _profileService = ProfileService();
   final ImagePicker _picker = ImagePicker();
 
   final TextEditingController _nameController = TextEditingController();
@@ -30,37 +27,20 @@ class _MyProfilePageState extends State<MyProfilePage> {
     _loadUserProfile();
   }
 
- Future<void> _loadUserProfile() async {
-  final User? user = _auth.currentUser;
-  if (user == null) return;
+  Future<void> _loadUserProfile() async {
+    setState(() => _isLoading = true);
 
-  setState(() => _isLoading = true);
+    final profileData = await _profileService.getUserProfile();
 
-  try {
-    final DocumentSnapshot userDoc =
-        await _firestore.collection('users').doc(user.uid).get();
-
-    if (userDoc.exists) {
-      final data = userDoc.data() as Map<String, dynamic>;
-      _nameController.text = data['name'] ?? '';
-      _phoneController.text = data['phone'] ?? '';
-
-      if (mounted) {
-        setState(() {
-          _profileImageUrl = data['photoUrl'] ?? '';
-        });
-      }
+    if (profileData != null && mounted) {
+      setState(() {
+        _nameController.text = profileData['name'] ?? '';
+        _phoneController.text = profileData['phone'] ?? '';
+        _profileImageUrl = profileData['photoUrl'] ?? '';
+      });
     }
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading profile: $e')),
-      );
-    }
-  } finally {
-    if (mounted) setState(() => _isLoading = false);
+    setState(() => _isLoading = false);
   }
-}
 
   Future<void> _pickImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
@@ -71,55 +51,29 @@ class _MyProfilePageState extends State<MyProfilePage> {
     }
   }
 
-  Future<String?> _uploadProfileImage(File imageFile) async {
-    try {
-      final User? user = _auth.currentUser;
-      if (user == null) return null;
-
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child('profile_images/${user.uid}.jpg');
-      await ref.putFile(imageFile);
-      return await ref.getDownloadURL();
-    } catch (e) {
-      return null;
-    }
-  }
-
   Future<void> _saveProfile() async {
-    final User? user = _auth.currentUser;
-    if (user == null) return;
-
     setState(() => _isLoading = true);
 
     String? imageUrl = _profileImageUrl;
 
-    try {
-      if (_imageFile != null) {
-        imageUrl = await _uploadProfileImage(_imageFile!);
-      }
+    if (_imageFile != null) {
+      imageUrl = await _profileService.uploadProfileImage(_imageFile!);
+    }
 
-      await _firestore.collection('users').doc(user.uid).set({
-        'name': _nameController.text.trim(),
-        'phone': _phoneController.text.trim(),
-        'photoUrl': imageUrl ?? "",
-      }, SetOptions(merge: true));
+    await _profileService.saveUserProfile(
+      _nameController.text,
+      _phoneController.text,
+      imageUrl,
+    );
 
-      if (!mounted) return;
+    if (mounted) {
       setState(() => _profileImageUrl = imageUrl ?? "");
-
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profile Updated Successfully!')),
       );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
-    } finally {
-      setState(() => _isLoading = false);
     }
+
+    setState(() => _isLoading = false);
   }
 
   @override

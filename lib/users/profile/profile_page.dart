@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'my_profile_page.dart';
 import 'about_homeease.dart';
-
+import 'set_address_page.dart';
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
@@ -42,7 +42,7 @@ class ProfilePage extends StatelessWidget {
                   context,
                   title: 'My Address',
                   icon: Icons.location_on_outlined,
-                  page: Container(),
+                  page: const SetAddressPage(),
                 ),
                 const Divider(
                     height: 20, thickness: 8, color: Color(0xFFF5F5F5)),
