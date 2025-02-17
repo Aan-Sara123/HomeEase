@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'my_profile_page.dart';
 import 'about_homeease.dart';
 import 'set_address_page.dart';
+
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
@@ -16,7 +17,7 @@ class ProfilePage extends StatelessWidget {
                 color: Colors.white)),
         backgroundColor: const Color(0xFF673AB7),
         elevation: 4,
-        shadowColor: Colors.deepPurple.withOpacity(0.2),
+        shadowColor: Colors.deepPurple.withValues(alpha: 0.2),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Column(
@@ -114,7 +115,7 @@ class ProfilePage extends StatelessWidget {
         width: 36,
         height: 36,
         decoration: BoxDecoration(
-          color: const Color(0xFF673AB7).withOpacity(0.1),
+          color: const Color(0xFF673AB7).withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, size: 20, color: const Color(0xFF673AB7)),
@@ -144,7 +145,7 @@ class ProfilePage extends StatelessWidget {
         width: 36,
         height: 36,
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, size: 20, color: color),
