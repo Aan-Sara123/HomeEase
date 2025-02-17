@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'firestore_service.dart';
+import 'authentication/firestore_service.dart';
 
 /// Vendor Registration - Handles Vendor Registration logic
 class VendorRegistration extends StatefulWidget {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../../firestore_service.dart';
+import '../../authentication/firestore_service.dart';
 import 'dart:developer';
 import 'login_page1.dart';
 

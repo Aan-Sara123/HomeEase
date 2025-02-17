@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../firestore_service.dart';
+import '../../authentication/firestore_service.dart';
 import '../services_page.dart';
 import 'user_registration.dart';
 
