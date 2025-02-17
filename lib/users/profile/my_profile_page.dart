@@ -107,7 +107,8 @@ class _MyProfilePageState extends State<MyProfilePage> {
                                       _profileImageUrl!.isNotEmpty
                                   ? NetworkImage(_profileImageUrl!)
                                       as ImageProvider
-                                  : const AssetImage('assets/default_avatar.png')),
+                                  : const AssetImage(
+                                      'assets/default_avatar.png')),
                           child: _imageFile == null &&
                                   (_profileImageUrl == null ||
                                       _profileImageUrl!.isEmpty)
@@ -122,7 +123,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: Colors.black.withValues(alpha: 0.1),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),

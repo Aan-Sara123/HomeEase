@@ -19,7 +19,7 @@ class AboutHomeEasePage extends StatelessWidget {
           ),
         ),
         elevation: 4,
-        shadowColor: Colors.deepPurple.withOpacity(0.3),
+        shadowColor: Colors.deepPurple.withValues(alpha: 0.3),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
@@ -46,7 +46,10 @@ class AboutHomeEasePage extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            color: Theme.of(context)
+                .colorScheme
+                .primary
+                .withAlpha((0.1 * 255).round()),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Icon(
@@ -122,7 +125,8 @@ class AboutHomeEasePage extends StatelessWidget {
           mainAxisSpacing: 16,
           crossAxisSpacing: 16,
           children: [
-            _buildFeatureItem(context, Icons.verified_user, 'Verified Professionals'),
+            _buildFeatureItem(
+                context, Icons.verified_user, 'Verified Professionals'),
             _buildFeatureItem(context, Icons.schedule, 'Instant Booking'),
             _buildFeatureItem(context, Icons.star_rate, '5-Star Ratings'),
             _buildFeatureItem(context, Icons.security, 'Secure Payments'),
@@ -135,10 +139,16 @@ class AboutHomeEasePage extends StatelessWidget {
   Widget _buildFeatureItem(BuildContext context, IconData icon, String text) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
+        color: Theme.of(context)
+            .colorScheme
+            .primary
+            .withAlpha((0.1 * 255).toInt()),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+          color: Theme.of(context)
+              .colorScheme
+              .primary
+              .withAlpha((0.1 * 255).toInt()),
           width: 1,
         ),
       ),
@@ -178,4 +188,3 @@ class AboutHomeEasePage extends StatelessWidget {
     );
   }
 }
-

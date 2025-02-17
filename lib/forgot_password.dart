@@ -27,7 +27,7 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
       await FirebaseAuth.instance.sendPasswordResetEmail(
         email: _emailController.text.trim(),
       );
-      
+
       setState(() {
         _message = 'Password reset email sent! Check your inbox.';
         _messageColor = Colors.green;
@@ -59,7 +59,8 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Reset Password', style: TextStyle(color: Colors.white)),
+        title:
+            const Text('Reset Password', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.deepPurple,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -97,7 +98,8 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: _messageColor.withOpacity(0.1),
+                      color: _messageColor
+                          .withAlpha(25), // Fixed deprecated method
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -157,4 +159,3 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
     );
   }
 }
-
