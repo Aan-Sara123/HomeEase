@@ -1,0 +1,2 @@
+C:/Users/Allen/OneDrive/Documents/Aan/homeeaseapp/android/app/.cxx/Debug/r03n25y2/x86/CMakeFiles/edit_cache.dir
+C:/Users/Allen/OneDrive/Documents/Aan/homeeaseapp/android/app/.cxx/Debug/r03n25y2/x86/CMakeFiles/rebuild_cache.dir
