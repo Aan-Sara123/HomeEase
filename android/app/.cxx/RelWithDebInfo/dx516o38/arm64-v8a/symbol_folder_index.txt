@@ -1,0 +1,1 @@
+C:\Users\Allen\homeeaseapp\build\app\intermediates\cxx\RelWithDebInfo\dx516o38\obj\arm64-v8a

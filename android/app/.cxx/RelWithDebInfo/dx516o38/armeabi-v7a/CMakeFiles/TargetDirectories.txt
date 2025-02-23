@@ -1,0 +1,2 @@
+C:/Users/Allen/homeeaseapp/android/app/.cxx/RelWithDebInfo/dx516o38/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/Allen/homeeaseapp/android/app/.cxx/RelWithDebInfo/dx516o38/armeabi-v7a/CMakeFiles/rebuild_cache.dir

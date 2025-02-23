@@ -13,6 +13,9 @@ pluginManagement {
         google()
         mavenCentral()
         gradlePluginPortal()
+        maven {
+            url '../../flutter/packages/flutter_tools/gradle'
+        }
     }
 }
 
