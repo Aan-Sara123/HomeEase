@@ -18,7 +18,7 @@ dependencies:
   google_sign_in: ^6.2.2
   logger: ^2.5.0
   cloud_firestore: ^5.6.4
-  http: ^1.2.2
+  http: ^1.3.0
   geolocator: ^13.0.2
   geocoding: ^3.0.0
   google_fonts: ^6.2.1
@@ -31,6 +31,8 @@ dependencies:
   path: 1.9.1
   firebase_messaging: ^15.2.3
   intl: ^0.20.2
+  googleapis_auth: ^1.3.2
+  flutter_local_notifications: ^17.0.0 
   
 dev_dependencies:
   flutter_test:
@@ -44,4 +46,6 @@ flutter:
     - assets/images/electronic_repairs.jpg
     - assets/images/plumbing.jpg
     - assets/images/appliance_repairs.jpg
+    - assets/service-account.json
+
 

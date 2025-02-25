@@ -1,95 +1,82 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
+import 'package:googleapis_auth/auth_io.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 
 class FirebaseService {
+  final String projectId = "homeeaseapp-36aba"; // 🔴 Replace with your Firebase Project ID
+  final String serviceAccountPath = "assets/service-account.json"; // 🔴 Path to service account JSON
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
 
-  static const String _serverKey = "YOUR_FCM_SERVER_KEY"; // 🔴 Replace this with your actual FCM Server Key
-
-  /// 🔹 Request notification permissions
-  Future<void> requestNotificationPermissions() async {
-    NotificationSettings settings = await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      debugPrint("✅ Notifications enabled");
-    } else {
-      debugPrint("❌ Notifications denied");
-    }
-  }
-
-  /// 🔹 Store the user's FCM token in Firestore
-  Future<void> storeUserFcmToken() async {
+  /// 🔹 Authenticate and obtain an OAuth token using clientViaServiceAccount
+  Future<String> getAccessToken() async {
     try {
-      User? user = _auth.currentUser;
-      if (user != null) {
-        String? token = await _messaging.getToken();
-        if (token != null) {
-          await _firestore.collection('users').doc(user.uid).set(
-            {'fcmToken': token},
-            SetOptions(merge: true),
-          );
-          debugPrint("✅ User's FCM token updated: $token");
-        }
-      }
+      final serviceAccount = await rootBundle.loadString(serviceAccountPath); // ✅ Corrected for Flutter assets
+      final credentials = ServiceAccountCredentials.fromJson(serviceAccount);
+
+      final client = await clientViaServiceAccount(
+        credentials,
+        ['https://www.googleapis.com/auth/firebase.messaging'],
+      );
+
+      final accessToken = client.credentials.accessToken.data;
+      client.close(); // ✅ Close client to prevent memory leaks
+
+      return accessToken;
     } catch (e) {
-      debugPrint("❌ Error storing FCM token: $e");
+      debugPrint("❌ Error obtaining access token: $e");
+      rethrow;
     }
   }
 
-  /// 🔹 Save booking and send notification
-  Future<void> saveBooking(String serviceName, String date, String time) async {
+  /// 🔹 Save booking details to Firestore
+  Future<void> saveBooking(String userId, String serviceName, String date, String time, String fcmToken) async {
     try {
-      User? user = _auth.currentUser;
-      if (user != null) {
-        // Store booking details in Firestore
-        await _firestore.collection('users').doc(user.uid).update({
-          'bookings': FieldValue.arrayUnion([
-            {'serviceName': serviceName, 'date': date, 'time': time}
-          ]),
-        });
+      await _firestore.collection("bookings").add({
+        "userId": userId,
+        "serviceName": serviceName,
+        "date": date,
+        "time": time,
+        "createdAt": FieldValue.serverTimestamp(),
+      });
 
-        // Retrieve FCM token and send notification
-        DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
-        String? fcmToken = userDoc['fcmToken'];
+      debugPrint("✅ Booking saved successfully");
 
-        if (fcmToken != null) {
-          await _sendFCMNotification(fcmToken, serviceName, date, time);
-        } else {
-          debugPrint('No FCM token found for user: ${user.email}');
-        }
-      }
+      // After saving booking, send notification
+      await sendFCMNotification(fcmToken, serviceName, date, time);
     } catch (e) {
-      debugPrint('❌ Error saving booking: $e');
+      debugPrint("❌ Error saving booking: $e");
     }
   }
 
-  /// 🔹 Send notification using Firebase Cloud Messaging
-  Future<void> _sendFCMNotification(String fcmToken, String serviceName, String date, String time) async {
+  /// 🔹 Send a push notification using FCM v1 API
+  Future<void> sendFCMNotification(String fcmToken, String serviceName, String date, String time) async {
     try {
+      final String accessToken = await getAccessToken();
+      final String url = 'https://fcm.googleapis.com/v1/projects/$projectId/messages:send';
+
       var response = await http.post(
-        Uri.parse('https://fcm.googleapis.com/v1/projects/homeeaseapp-36aba/messages:send'),
+        Uri.parse(url),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'key=$_serverKey',
+          'Authorization': 'Bearer $accessToken',
         },
         body: jsonEncode({
-          'to': fcmToken,
-          'notification': {
-            'title': 'Booking Confirmed',
-            'body': 'Your $serviceName booking is confirmed for $date at $time.',
-            'sound': 'default',
+          'message': {
+            'token': fcmToken,
+            'notification': {
+              'title': 'Booking Confirmed',
+              'body': 'Your $serviceName booking is confirmed for $date at $time.',
+            },
+            'android': {
+              'priority': 'high',
+            },
+            'apns': {
+              'headers': {'apns-priority': '10'},
+            },
           },
-          'priority': 'high',
         }),
       );
 
@@ -103,3 +90,4 @@ class FirebaseService {
     }
   }
 }
+
