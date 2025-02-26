@@ -13,7 +13,7 @@ class FirebaseService {
   /// 🔹 Authenticate and obtain an OAuth token using clientViaServiceAccount
   Future<String> getAccessToken() async {
     try {
-      final serviceAccount = await rootBundle.loadString(serviceAccountPath); // ✅ Corrected for Flutter assets
+      final serviceAccount = await rootBundle.loadString(serviceAccountPath);
       final credentials = ServiceAccountCredentials.fromJson(serviceAccount);
 
       final client = await clientViaServiceAccount(
@@ -22,7 +22,7 @@ class FirebaseService {
       );
 
       final accessToken = client.credentials.accessToken.data;
-      client.close(); // ✅ Close client to prevent memory leaks
+      client.close(); 
 
       return accessToken;
     } catch (e) {
@@ -31,27 +31,56 @@ class FirebaseService {
     }
   }
 
-  /// 🔹 Save booking details to Firestore
-  Future<void> saveBooking(String userId, String serviceName, String date, String time, String fcmToken) async {
+  /// 🔹 Save booking details to Firestore and return booking ID
+  Future<String> saveBooking(String userId, String serviceName, String date, String time, String fcmToken) async {
     try {
-      await _firestore.collection("bookings").add({
+      DocumentReference bookingRef = await _firestore.collection("bookings").add({
         "userId": userId,
         "serviceName": serviceName,
         "date": date,
         "time": time,
+        "fcmToken": fcmToken, // 🔹 Save FCM token for cancellation notification
         "createdAt": FieldValue.serverTimestamp(),
       });
 
-      debugPrint("✅ Booking saved successfully");
+      debugPrint("✅ Booking saved successfully: ${bookingRef.id}");
 
-      // After saving booking, send notification
       await sendFCMNotification(fcmToken, serviceName, date, time);
+
+      return bookingRef.id; // Return booking ID
     } catch (e) {
       debugPrint("❌ Error saving booking: $e");
+      rethrow;
     }
   }
 
-  /// 🔹 Send a push notification using FCM v1 API
+  /// 🔹 Cancel a booking and send notification
+  Future<void> cancelBooking(String bookingId) async {
+    try {
+      DocumentSnapshot bookingSnapshot = await _firestore.collection("bookings").doc(bookingId).get();
+
+      if (!bookingSnapshot.exists) {
+        debugPrint("❌ Booking not found.");
+        return;
+      }
+
+      String fcmToken = bookingSnapshot['fcmToken'];
+      String serviceName = bookingSnapshot['serviceName'];
+      String date = bookingSnapshot['date'];
+      String time = bookingSnapshot['time'];
+
+      // Delete booking from Firestore
+      await _firestore.collection("bookings").doc(bookingId).delete();
+      debugPrint("✅ Booking canceled successfully");
+
+      // Send cancellation notification
+      await sendCancellationNotification(fcmToken, serviceName, date, time);
+    } catch (e) {
+      debugPrint("❌ Error canceling booking: $e");
+    }
+  }
+
+  /// 🔹 Send a booking confirmation notification
   Future<void> sendFCMNotification(String fcmToken, String serviceName, String date, String time) async {
     try {
       final String accessToken = await getAccessToken();
@@ -81,12 +110,51 @@ class FirebaseService {
       );
 
       if (response.statusCode == 200) {
-        debugPrint("✅ Notification sent successfully");
+        debugPrint("✅ Booking notification sent successfully");
       } else {
-        debugPrint("❌ Error sending notification: ${response.body}");
+        debugPrint("❌ Error sending booking notification: ${response.body}");
       }
     } catch (e) {
       debugPrint("❌ Exception while sending notification: $e");
+    }
+  }
+
+  /// 🔹 Send a cancellation notification
+  Future<void> sendCancellationNotification(String fcmToken, String serviceName, String date, String time) async {
+    try {
+      final String accessToken = await getAccessToken();
+      final String url = 'https://fcm.googleapis.com/v1/projects/$projectId/messages:send';
+
+      var response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode({
+          'message': {
+            'token': fcmToken,
+            'notification': {
+              'title': 'Booking Canceled',
+              'body': 'Your $serviceName booking on $date at $time has been canceled.',
+            },
+            'android': {
+              'priority': 'high',
+            },
+            'apns': {
+              'headers': {'apns-priority': '10'},
+            },
+          },
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint("✅ Cancellation notification sent successfully");
+      } else {
+        debugPrint("❌ Error sending cancellation notification: ${response.body}");
+      }
+    } catch (e) {
+      debugPrint("❌ Exception while sending cancellation notification: $e");
     }
   }
 }
