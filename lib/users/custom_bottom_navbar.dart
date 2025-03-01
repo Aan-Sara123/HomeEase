@@ -19,8 +19,7 @@ class CustomBottomNavBar extends StatelessWidget {
     return BottomNavigationBar(
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today), label: 'Bookings'),
+        BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Bookings'),
         BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
       ],
       currentIndex: selectedIndex,

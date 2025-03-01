@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:homeeaseapp/users/booking_icon/booking_details_page.dart';
+import 'package:homeeaseapp/users/profile_icon/contact_service.dart';
+import 'package:homeeaseapp/users/profile_icon/contact_us_page.dart';
 import 'my_profile_page.dart';
 import 'about_homeease.dart';
 import 'set_address_page.dart';
@@ -37,7 +40,7 @@ class ProfilePage extends StatelessWidget {
                   context,
                   title: 'Bookings',
                   icon: Icons.calendar_today_outlined,
-                  page: Container(),
+                  page: const BookingDetailsPage(),
                 ),
                 _buildListItem(
                   context,
@@ -58,7 +61,7 @@ class ProfilePage extends StatelessWidget {
                   context,
                   title: 'Contact Us',
                   icon: Icons.support_agent_outlined,
-                  page: Container(),
+                  page: const ContactUsPage(),
                 ),
                 const Divider(
                     height: 20, thickness: 8, color: Color(0xFFF5F5F5)),

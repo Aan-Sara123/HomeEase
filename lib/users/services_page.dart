@@ -1,10 +1,11 @@
  import 'package:flutter/material.dart';
-import 'profile/profile_page.dart';
+import 'profile_icon/profile_page.dart';
 import 'service_category_card.dart';
-import 'service_grid_card.dart';
+import 'booking_functionality/service_grid_card.dart';
 import 'custom_bottom_navbar.dart';
 import 'custom_search_delegate.dart';
 import 'service.dart';
+import 'booking_icon/booking_details_page.dart';
 
 class ServicesPage extends StatefulWidget {
   const ServicesPage({super.key});
@@ -18,17 +19,29 @@ class _ServicesPageState extends State<ServicesPage> {
   final Color _primaryColor = const Color(0xFF673AB7);
   final Color _accentColor = const Color.fromARGB(255, 215, 200, 209);
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-      if (_selectedIndex == 2) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const ProfilePage()),
-        );
-      }
-    });
-  }
+ void _onItemTapped(int index) {
+  setState(() {
+    _selectedIndex = index;
+    
+    Widget? destination;
+
+    if (_selectedIndex == 0) {
+      destination = const ServicesPage();
+    } else if (_selectedIndex == 1) {
+      destination = const BookingDetailsPage();
+    } else if (_selectedIndex == 2) {
+      destination = const ProfilePage();
+    }
+
+    if (destination != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => destination!),
+      );
+    }
+  });
+}
+
 
   @override
   Widget build(BuildContext context) {
