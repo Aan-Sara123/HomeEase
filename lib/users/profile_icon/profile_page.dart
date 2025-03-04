@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:homeeaseapp/users/booking_icon/booking_details_page.dart';
-import 'package:homeeaseapp/users/profile_icon/contact_service.dart';
 import 'package:homeeaseapp/users/profile_icon/contact_us_page.dart';
 import 'my_profile_page.dart';
 import 'about_homeease.dart';
 import 'set_address_page.dart';
+import 'logout_service.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -20,7 +20,7 @@ class ProfilePage extends StatelessWidget {
                 color: Colors.white)),
         backgroundColor: const Color(0xFF673AB7),
         elevation: 4,
-        shadowColor: Colors.deepPurple.withValues(alpha: 0.2),
+        shadowColor: Colors.deepPurple.withValues(alpha: 51), // 20% opacity
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Column(
@@ -82,7 +82,7 @@ class ProfilePage extends StatelessWidget {
                   title: 'Logout',
                   icon: Icons.logout_outlined,
                   color: Colors.red,
-                  onTap: () => _showLogoutConfirmation(context),
+                  onTap: () => LogoutService.showLogoutConfirmation(context),
                 ),
               ],
             ),
@@ -118,7 +118,7 @@ class ProfilePage extends StatelessWidget {
         width: 36,
         height: 36,
         decoration: BoxDecoration(
-          color: const Color(0xFF673AB7).withValues(alpha: 0.1),
+          color: const Color(0xFF673AB7).withValues(alpha: 25), // 10% opacity
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, size: 20, color: const Color(0xFF673AB7)),
@@ -148,7 +148,7 @@ class ProfilePage extends StatelessWidget {
         width: 36,
         height: 36,
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
+          color: color.withValues(alpha: 25), // 10% opacity
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, size: 20, color: color),
@@ -159,29 +159,6 @@ class ProfilePage extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
       minLeadingWidth: 24,
       onTap: onTap,
-    );
-  }
-
-  void _showLogoutConfirmation(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              // Implement logout logic
-              Navigator.pop(context);
-            },
-            child: const Text('Logout', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
     );
   }
 }
