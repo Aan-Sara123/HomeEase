@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:homeeaseapp/users/booking_icon/booking_details_page.dart';
-import 'package:homeeaseapp/users/profile_icon/contact_us_page.dart';
-import 'my_profile_page.dart';
-import 'about_homeease.dart';
-import 'set_address_page.dart';
-import 'logout_service.dart';
+import 'package:homeeaseapp/users/profile_icon/contact/contact_us_page.dart';
+import 'my_profile/my_profile_page.dart';
+import 'about/about_homeease.dart';
+import 'address/set_address_page.dart';
+import 'logout/logout_service.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
