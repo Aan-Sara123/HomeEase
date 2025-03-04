@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'authentication/login.dart';
+import 'users/profile_icon/profile_page.dart'; // Import the ProfilePage
 import 'my_firebase_messaging_service.dart';
-
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,13 +18,17 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Firebase Auth Demo',
+      debugShowCheckedModeBanner: false,
+      title: 'HomeEase',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const LoginPage(),
+      initialRoute: FirebaseAuth.instance.currentUser == null ? '/login' : '/home',
+      routes: {
+        '/login': (context) => const LoginPage(),  // Ensure this exists
+        '/home': (context) => const ProfilePage(), // Ensure this exists
+      },
     );
   }
 }
-
