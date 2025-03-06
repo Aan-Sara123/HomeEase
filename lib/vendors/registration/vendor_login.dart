@@ -38,7 +38,7 @@ class VendorLoginPageState extends State<VendorLoginPage> {
         _showSnackBar('Welcome back, ${vendor["name"]}!');
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const ServicesPage()),
+          MaterialPageRoute(builder: (context) => const VendorRegistrationPage()),
         );
       } else {
         _showSnackBar('Vendor not found! Please register first.');
