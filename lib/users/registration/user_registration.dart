@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -97,10 +99,16 @@ class UserRegistrationState extends State<UserRegistration> {
 
   @override
   Widget build(BuildContext context) {
+    // Define color palette
+    const Color primaryPurple = Color(0xFF6A1B9A);
+    const Color lightPurple = Color(0xFF9C27B0);
+    const Color darkPurple = Color(0xFF4A148C);
+    const Color accentPurple = Color(0xFFAB47BC);
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('User Registration', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-        backgroundColor: Colors.teal,
+        backgroundColor: darkPurple,
         elevation: 0,
         centerTitle: true,
       ),
@@ -109,7 +117,8 @@ class UserRegistrationState extends State<UserRegistration> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.teal, Colors.white],
+            colors: [darkPurple, Colors.white],
+            stops: [0.3, 1.0],
           ),
         ),
         child: Center(
@@ -117,7 +126,11 @@ class UserRegistrationState extends State<UserRegistration> {
             padding: const EdgeInsets.all(20.0),
             child: Card(
               elevation: 10,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shadowColor: primaryPurple.withOpacity(0.5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: const BorderSide(color: accentPurple, width: 1),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(25.0),
                 child: Form(
@@ -128,7 +141,7 @@ class UserRegistrationState extends State<UserRegistration> {
                       const Center(
                         child: Text(
                           'Register New User',
-                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.teal),
+                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: primaryPurple),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -136,35 +149,50 @@ class UserRegistrationState extends State<UserRegistration> {
                         controller: _nameController,
                         decoration: InputDecoration(
                           labelText: 'Name',
-                          labelStyle: const TextStyle(color: Colors.teal),
+                          labelStyle: const TextStyle(color: primaryPurple),
+                          prefixIcon: const Icon(Icons.person, color: accentPurple),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: Colors.teal),
+                            borderSide: const BorderSide(color: primaryPurple),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: Colors.teal, width: 2),
+                            borderSide: const BorderSide(color: primaryPurple, width: 2),
                           ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: accentPurple.withOpacity(0.5)),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
                         ),
                         validator: (value) => value?.isEmpty ?? true ? 'Please enter a name' : null,
                       ),
                       const SizedBox(height: 20),
                       Row(
                         children: [
-                          DropdownButton<String>(
-                            value: _selectedCountryCode,
-                            onChanged: (String? newValue) {
-                              setState(() => _selectedCountryCode = newValue!);
-                            },
-                            items: _countryCodes.map<DropdownMenuItem<String>>(
-                              (String value) => DropdownMenuItem<String>(
-                                value: value,
-                                child: Text(value, style: const TextStyle(color: Colors.teal)),
-                              ),
-                            ).toList(),
-                            dropdownColor: Colors.white,
-                            icon: const Icon(Icons.arrow_drop_down, color: Colors.teal),
-                            style: const TextStyle(color: Colors.teal),
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: accentPurple.withOpacity(0.5)),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            child: DropdownButton<String>(
+                              value: _selectedCountryCode,
+                              underline: const SizedBox(),
+                              onChanged: (String? newValue) {
+                                setState(() => _selectedCountryCode = newValue!);
+                              },
+                              items: _countryCodes.map<DropdownMenuItem<String>>(
+                                (String value) => DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Text(value, style: const TextStyle(color: primaryPurple)),
+                                ),
+                              ).toList(),
+                              dropdownColor: Colors.white,
+                              icon: const Icon(Icons.arrow_drop_down, color: primaryPurple),
+                              style: const TextStyle(color: primaryPurple),
+                            ),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
@@ -172,15 +200,22 @@ class UserRegistrationState extends State<UserRegistration> {
                               controller: _phoneController,
                               decoration: InputDecoration(
                                 labelText: 'Phone Number',
-                                labelStyle: const TextStyle(color: Colors.teal),
+                                labelStyle: const TextStyle(color: primaryPurple),
+                                prefixIcon: const Icon(Icons.phone, color: accentPurple),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(10),
-                                  borderSide: const BorderSide(color: Colors.teal),
+                                  borderSide: const BorderSide(color: primaryPurple),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(10),
-                                  borderSide: const BorderSide(color: Colors.teal, width: 2),
+                                  borderSide: const BorderSide(color: primaryPurple, width: 2),
                                 ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: accentPurple.withOpacity(0.5)),
+                                ),
+                                filled: true,
+                                fillColor: Colors.white,
                               ),
                               keyboardType: TextInputType.phone,
                               validator: (value) => value?.isEmpty ?? true ? 'Please enter a phone number' : null,
@@ -193,29 +228,46 @@ class UserRegistrationState extends State<UserRegistration> {
                         onPressed: _isFetchingLocation ? null : _fetchLocation,
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 50),
-                          backgroundColor: Colors.teal,
+                          backgroundColor: lightPurple,
+                          foregroundColor: Colors.white,
+                          elevation: 5,
+                          shadowColor: primaryPurple.withOpacity(0.5),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                         child: _isFetchingLocation
                             ? const CircularProgressIndicator(color: Colors.white)
-                            : const Text('Fetch Location', style: TextStyle(fontSize: 16)),
+                            : const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.location_on),
+                                  SizedBox(width: 8),
+                                  Text('Fetch Location', style: TextStyle(fontSize: 16)),
+                                ],
+                              ),
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
                         controller: _locationController,
                         decoration: InputDecoration(
                           labelText: 'Location',
-                          labelStyle: const TextStyle(color: Colors.teal),
+                          labelStyle: const TextStyle(color: primaryPurple),
+                          prefixIcon: const Icon(Icons.place, color: accentPurple),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: Colors.teal),
+                            borderSide: const BorderSide(color: primaryPurple),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: Colors.teal, width: 2),
+                            borderSide: const BorderSide(color: primaryPurple, width: 2),
                           ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: accentPurple.withOpacity(0.5)),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[100],
                         ),
                         readOnly: true,
                       ),
@@ -225,12 +277,22 @@ class UserRegistrationState extends State<UserRegistration> {
                           onPressed: _registerUser,
                           style: ElevatedButton.styleFrom(
                             minimumSize: const Size(double.infinity, 50),
-                            backgroundColor: Colors.teal,
+                            backgroundColor: darkPurple,
+                            foregroundColor: Colors.white,
+                            elevation: 5,
+                            shadowColor: primaryPurple.withOpacity(0.5),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          child: const Text('Register', style: TextStyle(fontSize: 18)),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.app_registration),
+                              SizedBox(width: 8),
+                              Text('Register', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -242,9 +304,17 @@ class UserRegistrationState extends State<UserRegistration> {
                               MaterialPageRoute(builder: (context) => const LoginPage()),
                             );
                           },
+                          style: TextButton.styleFrom(
+                            foregroundColor: primaryPurple,
+                          ),
                           child: const Text(
                             'Already Registered? Login Here',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.teal),
+                            style: TextStyle(
+                              fontSize: 16, 
+                              fontWeight: FontWeight.bold, 
+                              color: primaryPurple,
+                              decoration: TextDecoration.underline,
+                            ),
                           ),
                         ),
                       ),
