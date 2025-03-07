@@ -1,89 +1,99 @@
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'booking_details_page.dart';
 
-class VendorRegistrationPage extends StatefulWidget {
-  const VendorRegistrationPage({super.key});
+class ServicesPage extends StatefulWidget {
+  const ServicesPage({super.key});
 
   @override
-  VendorRegistrationPageState createState() => VendorRegistrationPageState();
+  State<ServicesPage> createState() => _ServicesPageState();
 }
 
-class VendorRegistrationPageState extends State<VendorRegistrationPage> {
-  final _formKey = GlobalKey<FormState>();
-  String? _selectedFile;
+class _ServicesPageState extends State<ServicesPage> {
+  String? vendorExpertise;
 
-  void _pickFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles();
-    if (result != null) {
+  @override
+  void initState() {
+    super.initState();
+    _fetchVendorExpertise();
+  }
+
+  /// Fetches the logged-in vendor's expertise from Firestore
+  Future<void> _fetchVendorExpertise() async {
+    String uid = FirebaseAuth.instance.currentUser!.uid;
+    DocumentSnapshot vendorSnapshot =
+        await FirebaseFirestore.instance.collection('vendors').doc(uid).get();
+
+    if (vendorSnapshot.exists) {
       setState(() {
-        _selectedFile = result.files.single.name;
+        vendorExpertise = vendorSnapshot['expertise'];
       });
     }
+  }
+
+  /// Fetches bookings that match the vendor's expertise
+  Stream<QuerySnapshot> _getRelevantBookings() {
+    if (vendorExpertise == null) {
+      return const Stream.empty();
+    }
+    return FirebaseFirestore.instance
+        .collection('bookings')
+        .where('serviceName', isEqualTo: vendorExpertise)
+        .snapshots();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Vendor Registration'),
+        title: const Text('Your Service Requests'),
         centerTitle: true,
         backgroundColor: Colors.purple,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Name'),
-                validator: (value) => value!.isEmpty ? 'Please enter your name' : null,
-              ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Address'),
-                validator: (value) => value!.isEmpty ? 'Please enter your address' : null,
-              ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Expertise'),
-                validator: (value) => value!.isEmpty ? 'Please enter your expertise' : null,
-              ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Experience (Years)'),
-                keyboardType: TextInputType.number,
-                validator: (value) => value!.isEmpty ? 'Please enter your experience' : null,
-              ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Phone Number'),
-                keyboardType: TextInputType.phone,
-                validator: (value) => value!.isEmpty ? 'Please enter your phone number' : null,
-              ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Email ID'),
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) => value!.isEmpty ? 'Please enter your email ID' : null,
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _pickFile,
-                child: const Text('Upload Certificate'),
-              ),
-              if (_selectedFile != null) ...[
-                const SizedBox(height: 10),
-                Text('Selected File: $_selectedFile', style: const TextStyle(fontSize: 16)),
-              ],
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    // Handle form submission
-                  }
-                },
-                child: const Text('Register'),
-              ),
-            ],
-          ),
-        ),
-      ),
+      body: vendorExpertise == null
+          ? const Center(child: CircularProgressIndicator())
+          : StreamBuilder<QuerySnapshot>(
+              stream: _getRelevantBookings(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text('No bookings available.'));
+                }
+
+                var bookings = snapshot.data!.docs;
+
+                return ListView.builder(
+                  itemCount: bookings.length,
+                  itemBuilder: (context, index) {
+                    var bookingDoc = bookings[index];
+                    var booking = bookingDoc.data() as Map<String, dynamic>;
+
+                    return Card(
+                      margin: const EdgeInsets.all(8.0),
+                      child: ListTile(
+                        title: Text('Service: ${booking['serviceName']}'),
+                        subtitle: Text('Date: ${booking['date']} \nTime: ${booking['time']}'),
+                        trailing: const Icon(Icons.arrow_forward_ios),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => BookingDetailsPage(
+                                bookingId: bookingDoc.id,
+                                bookingData: booking,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
     );
   }
 }

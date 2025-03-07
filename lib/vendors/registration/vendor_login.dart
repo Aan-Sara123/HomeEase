@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'firestore_service.dart';
-import '../home_page/services_page.dart';
+import '../home_page/registration_proceed/registration_page.dart';
 import 'vendor_registration.dart';
 
 class VendorLoginPage extends StatefulWidget {

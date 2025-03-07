@@ -16,15 +16,17 @@ class _BookingPageState extends State<BookingPage> {
   final FirebaseService _firebaseService = FirebaseService();
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
-  String? _bookingId; // Store the booking ID after confirmation
+  String? _bookingId;
 
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _timeController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
 
   @override
   void dispose() {
     _dateController.dispose();
     _timeController.dispose();
+    _addressController.dispose();
     super.dispose();
   }
 
@@ -34,20 +36,6 @@ class _BookingPageState extends State<BookingPage> {
       initialDate: DateTime.now(),
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: Colors.teal, // Teal for the date picker
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Colors.teal.shade800,
-            ),
-            dialogTheme: DialogTheme(backgroundColor: Colors.white,),
-          ),
-          child: child!,
-        );
-      },
     );
     if (picked != null) {
       setState(() {
@@ -61,20 +49,6 @@ class _BookingPageState extends State<BookingPage> {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: Colors.teal, // Teal for the time picker
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Colors.teal.shade800,
-            ),
-            dialogTheme: DialogTheme(backgroundColor: Colors.white,),
-          ),
-          child: child!,
-        );
-      },
     );
     if (picked != null) {
       setState(() {
@@ -85,9 +59,10 @@ class _BookingPageState extends State<BookingPage> {
   }
 
   Future<void> _confirmBooking() async {
-    if (_selectedDate != null && _selectedTime != null) {
+    if (_selectedDate != null && _selectedTime != null && _addressController.text.isNotEmpty) {
       String formattedDate = DateFormat('yyyy-MM-dd').format(_selectedDate!);
       String formattedTime = _selectedTime!.format(context);
+      String address = _addressController.text.trim();
 
       User? user = FirebaseAuth.instance.currentUser;
       String userId = user?.uid ?? "Unknown User";
@@ -96,64 +71,32 @@ class _BookingPageState extends State<BookingPage> {
       if (fcmToken == null) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('⚠ Failed to get FCM token. Please check notification permissions.'),
-            backgroundColor: Colors.orange.shade700,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
+          const SnackBar(content: Text('⚠ Failed to get FCM token.')),
         );
         return;
       }
 
       try {
         String bookingId = await _firebaseService.saveBooking(
-          userId,
-          widget.serviceName,
-          formattedDate,
-          formattedTime,
-          fcmToken,
+          userId, widget.serviceName, formattedDate, formattedTime, address, fcmToken,
         );
 
         setState(() {
-          _bookingId = bookingId; // Store booking ID
+          _bookingId = bookingId;
         });
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ Booking confirmed for $formattedDate at $formattedTime'),
-            backgroundColor: Colors.teal.shade700,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
+          SnackBar(content: Text('✅ Booking confirmed for $formattedDate at $formattedTime')),
         );
       } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Error confirming booking: $e'),
-            backgroundColor: Colors.red.shade700,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
+          SnackBar(content: Text('❌ Error confirming booking: $e')),
         );
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('⚠ Please select both date and time'),
-          backgroundColor: Colors.orange.shade700,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
+        const SnackBar(content: Text('⚠ Please select date, time, and enter address')),
       );
     }
   }
@@ -161,45 +104,24 @@ class _BookingPageState extends State<BookingPage> {
   Future<void> _cancelBooking() async {
     if (_bookingId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('⚠ No booking found to cancel.'),
-          backgroundColor: Colors.orange.shade700,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
+        const SnackBar(content: Text('⚠ No booking to cancel.')),
       );
       return;
     }
 
     try {
       await _firebaseService.cancelBooking(_bookingId!);
-
       setState(() {
-        _bookingId = null; // Reset booking ID after cancellation
+        _bookingId = null;
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('✅ Booking canceled successfully'),
-          backgroundColor: Colors.teal.shade700,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
+        const SnackBar(content: Text('✅ Booking canceled successfully.')),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ Error canceling booking: $e'),
-          backgroundColor: Colors.red.shade700,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
+        SnackBar(content: Text('❌ Error canceling booking: $e')),
       );
     }
   }
@@ -208,126 +130,45 @@ class _BookingPageState extends State<BookingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          '${widget.serviceName} Booking',
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            fontSize: 20,
-          ),
-        ),
-        backgroundColor: Colors.teal.shade700,
-        elevation: 4,
-        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text('${widget.serviceName} Booking'),
+        backgroundColor: Colors.teal,
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.teal.shade50,
-              Colors.teal.shade100,
-            ],
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            children: [
-              _buildDateTimeField(
-                controller: _dateController,
-                label: 'Select Date',
-                icon: Icons.calendar_today,
-                onTap: () => _selectDate(context),
-              ),
-              const SizedBox(height: 20),
-              _buildDateTimeField(
-                controller: _timeController,
-                label: 'Select Time',
-                icon: Icons.access_time,
-                onTap: () => _selectTime(context),
-              ),
-              const SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: _confirmBooking,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal.shade700,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 4,
-                ),
-                child: const Text(
-                  'Confirm Booking',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
-              if (_bookingId != null) ...[
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: _cancelBooking,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red.shade400,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 4,
-                  ),
-                  child: const Text(
-                    'Cancel Booking',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ],
-          ),
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          children: [
+            _buildTextField(_dateController, 'Select Date', Icons.calendar_today, () => _selectDate(context)),
+            const SizedBox(height: 10),
+            _buildTextField(_timeController, 'Select Time', Icons.access_time, () => _selectTime(context)),
+            const SizedBox(height: 10),
+            _buildTextField(_addressController, 'Enter Address', Icons.location_on, null, isReadOnly: false),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _confirmBooking,
+              child: const Text('Confirm Booking'),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: _cancelBooking,
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Cancel Booking'),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildDateTimeField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildTextField(TextEditingController controller, String label, IconData icon, VoidCallback? onTap, {bool isReadOnly = true}) {
     return TextField(
       controller: controller,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(
-          color: Colors.teal.shade800,
-          fontWeight: FontWeight.w500,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.teal.shade400),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.teal.shade400),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.teal.shade700, width: 2),
-        ),
-        suffixIcon: Icon(icon, color: Colors.teal.shade600),
-        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        prefixIcon: Icon(icon),
+        border: OutlineInputBorder(),
       ),
-      readOnly: true,
+      readOnly: isReadOnly,
       onTap: onTap,
-      style: TextStyle(
-        color: Colors.teal.shade900,
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-      ),
-      cursorColor: Colors.teal.shade700,
     );
   }
 }

@@ -32,22 +32,24 @@ class FirebaseService {
   }
 
   /// 🔹 Save booking details to Firestore and return booking ID
-  Future<String> saveBooking(String userId, String serviceName, String date, String time, String fcmToken) async {
+  Future<String> saveBooking(String userId, String serviceName, String date, String time, String address, String fcmToken) async {
     try {
       DocumentReference bookingRef = await _firestore.collection("bookings").add({
         "userId": userId,
         "serviceName": serviceName,
         "date": date,
         "time": time,
+        "address": address, // 🔹 Save address field
         "fcmToken": fcmToken, // 🔹 Save FCM token for cancellation notification
         "createdAt": FieldValue.serverTimestamp(),
       });
 
-      debugPrint("✅ Booking saved successfully: ${bookingRef.id}");
+      String bookingId = bookingRef.id;
+      debugPrint("✅ Booking saved successfully: $bookingId");
 
-      await sendFCMNotification(fcmToken, serviceName, date, time);
+      await sendFCMNotification(fcmToken, serviceName, date, time, address);
 
-      return bookingRef.id; // Return booking ID
+      return bookingId; // Return booking ID
     } catch (e) {
       debugPrint("❌ Error saving booking: $e");
       rethrow;
@@ -68,20 +70,21 @@ class FirebaseService {
       String serviceName = bookingSnapshot['serviceName'];
       String date = bookingSnapshot['date'];
       String time = bookingSnapshot['time'];
+      String address = bookingSnapshot['address'];
 
       // Delete booking from Firestore
       await _firestore.collection("bookings").doc(bookingId).delete();
       debugPrint("✅ Booking canceled successfully");
 
       // Send cancellation notification
-      await sendCancellationNotification(fcmToken, serviceName, date, time);
+      await sendCancellationNotification(fcmToken, serviceName, date, time, address);
     } catch (e) {
       debugPrint("❌ Error canceling booking: $e");
     }
   }
 
   /// 🔹 Send a booking confirmation notification
-  Future<void> sendFCMNotification(String fcmToken, String serviceName, String date, String time) async {
+  Future<void> sendFCMNotification(String fcmToken, String serviceName, String date, String time, String address) async {
     try {
       final String accessToken = await getAccessToken();
       final String url = 'https://fcm.googleapis.com/v1/projects/$projectId/messages:send';
@@ -97,7 +100,7 @@ class FirebaseService {
             'token': fcmToken,
             'notification': {
               'title': 'Booking Confirmed',
-              'body': 'Your $serviceName booking is confirmed for $date at $time.',
+              'body': 'Your $serviceName booking is confirmed for $date at $time at $address.',
             },
             'android': {
               'priority': 'high',
@@ -120,7 +123,7 @@ class FirebaseService {
   }
 
   /// 🔹 Send a cancellation notification
-  Future<void> sendCancellationNotification(String fcmToken, String serviceName, String date, String time) async {
+  Future<void> sendCancellationNotification(String fcmToken, String serviceName, String date, String time, String address) async {
     try {
       final String accessToken = await getAccessToken();
       final String url = 'https://fcm.googleapis.com/v1/projects/$projectId/messages:send';
@@ -136,7 +139,7 @@ class FirebaseService {
             'token': fcmToken,
             'notification': {
               'title': 'Booking Canceled',
-              'body': 'Your $serviceName booking on $date at $time has been canceled.',
+              'body': 'Your $serviceName booking on $date at $time at $address has been canceled.',
             },
             'android': {
               'priority': 'high',
@@ -158,4 +161,3 @@ class FirebaseService {
     }
   }
 }
-
