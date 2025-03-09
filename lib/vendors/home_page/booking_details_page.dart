@@ -61,8 +61,7 @@ class _BookingDetailsPageState extends State<BookingDetailsPage> {
             Text("Date: ${widget.bookingData['date']}"),
             Text("Time: ${widget.bookingData['time']}"),
             Text("User Contact: ${widget.bookingData['userContact'] ?? 'N/A'}"),
-            Text(
-                "Location: ${widget.bookingData['location'] ?? 'Not provided'}"),
+            Text("Address: ${widget.bookingData['address'] ?? 'Not provided'}"),
             const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
