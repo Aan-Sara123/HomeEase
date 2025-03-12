@@ -66,6 +66,7 @@ class _SetAddressPageState extends State<SetAddressPage> {
       appBar: AppBar(
         title: Text('Set Address', style: styles.appBarTitleStyle),
         backgroundColor: styles.primaryColor,
+        foregroundColor: Colors.white,
         elevation: 4,
         centerTitle: true,
         shape: styles.appBarShape,

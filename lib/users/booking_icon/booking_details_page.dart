@@ -21,6 +21,7 @@ class BookingDetailsPage extends StatelessWidget {
           ),
         ),
         backgroundColor: const Color(0xFF673AB7), // Deep Purple
+        foregroundColor: Colors.white,
         elevation: 0,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(

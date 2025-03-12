@@ -117,6 +117,7 @@ class _LoginPageState extends State<LoginPage> {
       appBar: AppBar(
         title: const Text('Login', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.deepPurple,
+        foregroundColor: Colors.white,
         elevation: 0,
       ),
       backgroundColor: Colors.grey[100],
@@ -197,7 +198,7 @@ class _LoginPageState extends State<LoginPage> {
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text(
                         'Log In',
-                        style: TextStyle(fontSize: 16),
+                        style: TextStyle(fontSize: 16, color: Colors.white),
                       ),
               ),
               const SizedBox(height: 10),

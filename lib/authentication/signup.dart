@@ -156,7 +156,7 @@ class SignUpPageState extends State<SignUpPage> {
                     ? const CircularProgressIndicator(color: Color.fromARGB(255, 249, 252, 250))
                     : const Text(
                         'Sign Up',
-                        style: TextStyle(fontSize: 16),
+                        style: TextStyle(fontSize: 16, color: Colors.white),
                       ),
               ),
               const SizedBox(height: 10),

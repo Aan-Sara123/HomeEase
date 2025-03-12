@@ -1,5 +1,8 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:developer' as developer;
 
 class ContactAdminPage extends StatefulWidget {
   final String vendorId;
@@ -11,274 +14,215 @@ class ContactAdminPage extends StatefulWidget {
 }
 
 class _ContactAdminPageState extends State<ContactAdminPage> {
-  final TextEditingController messageController = TextEditingController();
-  String? replyingTo; // To track the message being replied to
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _messageController = TextEditingController();
 
   @override
   void dispose() {
-    messageController.dispose();
+    _messageController.dispose();
     super.dispose();
   }
 
-  Future<void> sendMessage({required String sender, String? replyTo}) async {
-    String message = messageController.text.trim();
-
-    if (message.isNotEmpty) {
-      await FirebaseFirestore.instance
-          .collection('chats')
-          .doc(widget.vendorId)
-          .collection('messages')
-          .add({
-        'message': message,
-        'sender': sender,
-        'timestamp': DateTime.now(),
-        'replyTo': replyTo, // Link reply to parent message
-      });
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(sender == 'vendor'
-              ? 'Message sent to admin successfully!'
-              : 'Message sent to vendor successfully!'),
-          backgroundColor: Colors.green,
-        ),
+  Future<void> _submitForm() async {
+    if (_formKey.currentState!.validate()) {
+      bool success = await _sendMessage(
+        vendorId: widget.vendorId,
+        message: _messageController.text,
       );
 
-      // Clear input and reply state
-      messageController.clear();
-      setState(() {
-        replyingTo = null;
-      });
-    } else {
-      if (!context.mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a message'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (success) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Message sent to admin successfully!'),
+            backgroundColor: Color(0xFF6A1B9A),
+          ),
+        );
+        _messageController.clear();
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to send message. Try again later.'),
+            backgroundColor: Color(0xFFAD1457),
+          ),
+        );
+      }
     }
   }
 
-  Widget buildReplyBadge(String message) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              "Replying to: $message",
-              style: const TextStyle(color: Colors.black54),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.close, size: 16),
-            onPressed: () {
-              setState(() {
-                replyingTo = null;
-              });
-            },
-          )
-        ],
-      ),
-    );
-  }
+  Future<bool> _sendMessage({
+    required String vendorId,
+    required String message,
+  }) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('vendorMessages')
+          .doc(vendorId)
+          .collection('messages')
+          .add({
+        'message': message,
+        'sender': 'vendor',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
 
-  Widget buildMessageItem(QueryDocumentSnapshot message) {
-    bool isVendor = message['sender'] == 'vendor';
-    String? replyTo = message['replyTo'];
-
-    return Column(
-      crossAxisAlignment:
-          isVendor ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-          decoration: BoxDecoration(
-            color: isVendor ? Colors.purple.shade100 : Colors.grey.shade300,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (replyTo != null) // If it's a reply, show the referenced message
-                StreamBuilder(
-                  stream: FirebaseFirestore.instance
-                      .collection('chats')
-                      .doc(widget.vendorId)
-                      .collection('messages')
-                      .doc(replyTo)
-                      .snapshots(),
-                  builder: (context, AsyncSnapshot<DocumentSnapshot> snapshot) {
-                    if (!snapshot.hasData || !snapshot.data!.exists) {
-                      return const SizedBox.shrink();
-                    }
-
-                    var parentMessage = snapshot.data!;
-                    return Container(
-                      padding: const EdgeInsets.all(8),
-                      margin: const EdgeInsets.only(bottom: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        parentMessage['message'],
-                        style: const TextStyle(
-                          fontStyle: FontStyle.italic,
-                          color: Colors.black54,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-
-              // Message Text
-              Text(
-                message['message'],
-                style: const TextStyle(fontSize: 16),
-              ),
-            ],
-          ),
-        ),
-
-        // Reply Button
-        TextButton(
-          onPressed: () {
-            setState(() {
-              replyingTo = message.id;
-              messageController.text = ''; // Clear message box for new input
-            });
-          },
-          child: const Text('Reply', style: TextStyle(color: Colors.blue)),
-        ),
-
-        // Display Replies
-        StreamBuilder(
-          stream: FirebaseFirestore.instance
-              .collection('chats')
-              .doc(widget.vendorId)
-              .collection('messages')
-              .where('replyTo', isEqualTo: message.id)
-              .orderBy('timestamp', descending: true)
-              .snapshots(),
-          builder: (context, AsyncSnapshot<QuerySnapshot> replySnapshot) {
-            if (!replySnapshot.hasData || replySnapshot.data!.docs.isEmpty) {
-              return const SizedBox.shrink();
-            }
-
-            var replies = replySnapshot.data!.docs;
-
-            return Padding(
-              padding: const EdgeInsets.only(left: 24),
-              child: Column(
-                children: replies.map((reply) {
-                  return buildMessageItem(reply);
-                }).toList(),
-              ),
-            );
-          },
-        ),
-      ],
-    );
+      developer.log("Message sent successfully");
+      return true;
+    } catch (e) {
+      developer.log("Error sending message", error: e);
+      return false;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    const primaryPurple = Color(0xFF6A1B9A);
+    // Define color palette
+    const primaryColor = Color(0xFF6A1B9A); // Deep Purple
+    const accentColor = Color(0xFF9C27B0); // Regular Purple
+    const lightPurple = Color(0xFFE1BEE7); // Light Purple
+    const darkPurple = Color(0xFF4A148C); // Dark Purple
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Contact Admin'),
-        backgroundColor: primaryPurple,
-      ),
-      body: Column(
-        children: [
-          // Display messages
-          Expanded(
-            child: StreamBuilder(
-              stream: FirebaseFirestore.instance
-                  .collection('chats')
-                  .doc(widget.vendorId)
-                  .collection('messages')
-                  .orderBy('timestamp', descending: true)
-                  .snapshots(),
-              builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text('No messages yet.'));
-                }
-
-                var messages = snapshot.data!.docs;
-
-                return ListView.builder(
-                  reverse: true,
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    var message = messages[index];
-                    return buildMessageItem(message);
-                  },
-                );
-              },
-            ),
+        title: const Text(
+          "Contact Admin",
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
           ),
-
-          // Message input and send buttons
-          if (replyingTo != null)
-            FutureBuilder(
-              future: FirebaseFirestore.instance
-                  .collection('chats')
-                  .doc(widget.vendorId)
-                  .collection('messages')
-                  .doc(replyingTo)
-                  .get(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData || !snapshot.data!.exists) {
-                  return const SizedBox.shrink();
-                }
-
-                var parentMessage = snapshot.data!;
-                return buildReplyBadge(parentMessage['message']);
-              },
-            ),
-
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: messageController,
-                    decoration: InputDecoration(
-                      labelText: 'Write your message...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+        ),
+        backgroundColor: primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        shadowColor: darkPurple.withOpacity(0.3),
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.white, lightPurple.withOpacity(0.2)],
+          ),
+        ),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          spreadRadius: 1,
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Send a Message to Admin",
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: darkPurple,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: lightPurple.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            "\"Our team is ready to assist you with any questions or concerns you may have.\"",
+                            style: TextStyle(
+                              fontStyle: FontStyle.italic,
+                              color: accentColor,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                IconButton(
-                  onPressed: () =>
-                      sendMessage(sender: 'vendor', replyTo: replyingTo),
-                  icon: const Icon(Icons.send, color: primaryPurple),
-                ),
-              ],
+                  const SizedBox(height: 24),
+                  TextFormField(
+                    controller: _messageController,
+                    decoration: InputDecoration(
+                      labelText: "Message",
+                      labelStyle: TextStyle(color: accentColor),
+                      hintText: "Type your message here...",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: lightPurple),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: primaryColor, width: 2),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: accentColor.withOpacity(0.5)),
+                      ),
+                      fillColor: Colors.white,
+                      filled: true,
+                      contentPadding:
+                          const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                      prefixIcon: const Icon(
+                        Icons.message_outlined,
+                        color: accentColor,
+                      ),
+                    ),
+                    maxLines: 4,
+                    validator: (value) =>
+                        value!.isEmpty ? "Enter your message" : null,
+                  ),
+                  const SizedBox(height: 28),
+                  ElevatedButton(
+                    onPressed: _submitForm,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 3,
+                      shadowColor: darkPurple.withOpacity(0.4),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.send_rounded),
+                        SizedBox(width: 8),
+                        Text(
+                          "Send Message",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }

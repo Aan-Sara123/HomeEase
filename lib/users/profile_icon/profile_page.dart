@@ -73,12 +73,6 @@ class ProfilePage extends StatelessWidget {
                   icon: Icons.storefront_outlined,
                   page: const VendorLoginPage(),
                 ),
-                _buildListItem(
-                  context,
-                  title: 'Share',
-                  icon: Icons.share_outlined,
-                  page: Container(),
-                ),
                 _buildActionTile(
                   title: 'Logout',
                   icon: Icons.logout_outlined,

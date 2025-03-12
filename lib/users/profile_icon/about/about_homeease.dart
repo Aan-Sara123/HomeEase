@@ -20,6 +20,7 @@ class AboutHomeEasePage extends StatelessWidget {
         ),
         elevation: 4,
         shadowColor: Colors.deepPurple.withValues(alpha: 0.3),
+        foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),

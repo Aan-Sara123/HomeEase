@@ -20,7 +20,8 @@ class HomePage extends StatelessWidget {
             letterSpacing: 0.5,
           ),
         ),
-        backgroundColor: const Color(0xFF673AB7), // Deep Purple
+        backgroundColor: const Color(0xFF673AB7), 
+        foregroundColor: Colors.white,// Deep Purple
         elevation: 0, // Remove shadow for modern look
       ),
       body: Container(

@@ -88,6 +88,7 @@ class _ServicesPageState extends State<ServicesPage> with SingleTickerProviderSt
           ),
         ),
         backgroundColor: _primaryColor,
+        foregroundColor: Colors.white,
         elevation: 0,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.only(
@@ -95,14 +96,7 @@ class _ServicesPageState extends State<ServicesPage> with SingleTickerProviderSt
             bottomRight: Radius.circular(20),
           ),
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.search, color: _accentColor, size: 28),
-            onPressed: () => showSearch(context: context, delegate: CustomSearchDelegate()),
-            tooltip: 'Search Services',
-          ),
-        ],
-      ),
+        ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
