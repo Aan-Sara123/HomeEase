@@ -5,6 +5,7 @@ import 'my_profile/my_profile_page.dart';
 import 'about/about_homeease.dart';
 import 'address/set_address_page.dart';
 import 'logout/logout_service.dart';
+import 'package:homeeaseapp/vendors/registration/vendor_login.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -70,7 +71,7 @@ class ProfilePage extends StatelessWidget {
                   context,
                   title: 'Register as Vendor',
                   icon: Icons.storefront_outlined,
-                  page: Container(),
+                  page: const VendorLoginPage(),
                 ),
                 _buildListItem(
                   context,
