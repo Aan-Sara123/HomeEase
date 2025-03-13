@@ -5,7 +5,6 @@ import 'profile_icon/profile_page.dart';
 import 'service_category_card.dart';
 import 'booking_functionality/service_grid_card.dart';
 import 'custom_bottom_navbar.dart';
-import 'custom_search_delegate.dart';
 import 'service.dart';
 import 'booking_icon/booking_details_page.dart';
 
