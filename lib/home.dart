@@ -2,8 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'users/registration/user_registration.dart';
-import 'vendors/registration/vendor_registration.dart';
 import 'users/services_page.dart';
+import 'vendors/registration/registration_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -115,7 +115,7 @@ class HomePage extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const VendorRegistration(),
+                        builder: (context) => const VendorRegistrationPage(),
                       ),
                     );
                   },

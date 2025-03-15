@@ -5,7 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:file_picker/file_picker.dart';
 import 'vendor_database.dart';
-import '../services_page.dart';
+import '../home_page/services_page.dart';
 
 class VendorRegistrationPage extends StatefulWidget {
   const VendorRegistrationPage({super.key});
