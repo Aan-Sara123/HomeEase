@@ -5,6 +5,8 @@ import 'booking_database.dart';
 import 'payment_service.dart';
 import 'rating_service.dart';
 import 'otp_service.dart';
+import 'notification_service.dart';
+import 'auth_service.dart'; // For checking admin role
 
 class BookingDetailsPage extends StatelessWidget {
   const BookingDetailsPage({super.key});
@@ -15,18 +17,13 @@ class BookingDetailsPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           "My Bookings",
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w600, letterSpacing: 0.5),
         ),
         backgroundColor: const Color(0xFF673AB7), // Deep Purple
         foregroundColor: Colors.white,
         elevation: 0,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            bottom: Radius.circular(16),
-          ),
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
         ),
       ),
       body: Container(
@@ -34,10 +31,7 @@ class BookingDetailsPage extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              const Color(0xFFF3E5F5), // Very light purple
-              Colors.white,
-            ],
+            colors: [const Color(0xFFF3E5F5), Colors.white], // Light purple
           ),
         ),
         child: StreamBuilder<List<Map<String, dynamic>>>(
@@ -52,47 +46,14 @@ class BookingDetailsPage extends StatelessWidget {
             }
             if (snapshot.hasError) {
               return Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 60,
-                      color: Color(0xFF9575CD),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      "Error: ${snapshot.error}",
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFF673AB7),
-                      ),
-                    ),
-                  ],
-                ),
+                child: Text("Error: ${snapshot.error}",
+                    style: const TextStyle(fontSize: 16, color: Colors.red)),
               );
             }
             if (!snapshot.hasData || snapshot.data!.isEmpty) {
               return const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.calendar_today_outlined,
-                      size: 60,
-                      color: Color(0xFF9575CD),
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      "No bookings found",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF673AB7),
-                      ),
-                    ),
-                  ],
-                ),
+                child: Text("No bookings found.",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
               );
             }
 
@@ -114,6 +75,7 @@ class BookingDetailsPage extends StatelessWidget {
   Widget _buildBookingCard(BuildContext context, Map<String, dynamic> booking) {
     final String status = booking['status'] ?? "Pending";
     final bool isServiceCompleted = status == 'Completed';
+    final bool isAdmin = AuthService.isAdmin(); // Check if user is admin
 
     // Status colors
     final Map<String, Color> statusColors = {
@@ -122,138 +84,101 @@ class BookingDetailsPage extends StatelessWidget {
       'Pending': const Color(0xFFFF9800),
       'Cancelled': const Color(0xFFF44336),
     };
-    
-    Color statusColor = statusColors[status] ?? const Color(0xFFF44336);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 5,
-      shadowColor: const Color(0xFFD1C4E9),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: const Color(0xFFD1C4E9),
-          width: 1,
-        ),
+        side: BorderSide(color: const Color(0xFFD1C4E9), width: 1),
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.white,
-              const Color(0xFFEDE7F6), // Very light purple
-            ],
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      booking['serviceName'] ?? "Service",
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF4A148C), // Very dark purple
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: statusColor),
-                    ),
-                    child: Text(
-                      status,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: statusColor,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ],
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildBookingHeader(booking, statusColors[status] ?? Colors.grey),
+            const SizedBox(height: 16),
+            _buildBookingDetails(booking),
+            const SizedBox(height: 20),
+            if (status == 'Accepted')
+              _buildActionButton(
+                text: "Mark as Completed",
+                icon: Icons.check_circle_outline,
+                color: const Color(0xFFFF9800),
+                onPressed: () {
+                  BookingDatabase.markServiceCompleted(booking['id'], booking['userId']);
+                  NotificationService.sendUserNotification(
+                      booking['userId'], "Your service has been completed.");
+                },
               ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFD1C4E9).withOpacity(0.5),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    _buildInfoRow(Icons.calendar_today, "Date", booking['date'] ?? "N/A"),
-                    const Divider(height: 16, thickness: 0.5),
-                    _buildInfoRow(Icons.access_time, "Time", booking['time'] ?? "N/A"),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              
-              // Button to mark the service as completed (Only visible if status is "Accepted")
-              if (status == 'Accepted')
-                _buildActionButton(
-                  text: "Mark as Completed",
-                  icon: Icons.check_circle_outline,
-                  color: const Color(0xFFFF9800),
-                  onPressed: () => BookingDatabase.markServiceCompleted(booking['id']),
-                ),
-
-              // Generate OTP Button (Only if Service is Completed)
+            if (isServiceCompleted)
               _buildActionButton(
                 text: "Generate OTP",
                 icon: Icons.vpn_key,
-                color: isServiceCompleted ? const Color(0xFF673AB7) : Colors.grey,
-                onPressed: isServiceCompleted
-                    ? () => OTPService.generateOTP(booking['id'])
-                    : () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("OTP can only be generated after the service is completed."),
-                            backgroundColor: Color(0xFF673AB7),
-                          ),
-                        );
-                      },
+                color: const Color(0xFF673AB7),
+                onPressed: () => OTPService.generateOTP(booking['id']),
               ),
-
-              // Payment Button
-              _buildActionButton(
-                text: "Make Payment",
-                icon: Icons.payment,
-                color: const Color(0xFF9C27B0),
-                onPressed: () => PaymentService.processPayment(booking['id']),
-              ),
-
-              // Rating Button
-              _buildActionButton(
-                text: "Rate Service",
-                icon: Icons.star_border,
-                color: const Color(0xFF7E57C2),
-                onPressed: () => RatingService.showRatingDialog(context, booking['id']),
-              ),
-            ],
-          ),
+            _buildActionButton(
+              text: "Make Payment",
+              icon: Icons.payment,
+              color: const Color(0xFF9C27B0),
+              onPressed: () => PaymentService.processPayment(booking['id']),
+            ),
+            _buildActionButton(
+              text: "Rate Service",
+              icon: Icons.star_border,
+              color: const Color(0xFF7E57C2),
+              onPressed: () =>
+                  RatingService.showRatingDialog(context, booking['id']),
+            ),
+            if (isAdmin) _buildAdminActions(booking),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildBookingHeader(Map<String, dynamic> booking, Color statusColor) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Text(
+            booking['serviceName'] ?? "Service",
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF4A148C),
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: statusColor.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: statusColor),
+          ),
+          child: Text(
+            booking['status'] ?? "Pending",
+            style: TextStyle(fontWeight: FontWeight.bold, color: statusColor),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBookingDetails(Map<String, dynamic> booking) {
+    return Column(
+      children: [
+        _buildInfoRow(Icons.calendar_today, "Date", booking['date'] ?? "N/A"),
+        _buildInfoRow(Icons.access_time, "Time", booking['time'] ?? "N/A"),
+        _buildInfoRow(Icons.person, "Vendor", booking['vendor_name'] ?? "N/A"),
+        _buildInfoRow(Icons.phone, "Vendor Contact",
+            booking['vendor_phone'] ?? "N/A"),
+      ],
     );
   }
 
@@ -262,11 +187,7 @@ class BookingDetailsPage extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Icon(
-            icon,
-            size: 20,
-            color: const Color(0xFF9575CD),
-          ),
+          Icon(icon, size: 20, color: const Color(0xFF9575CD)),
           const SizedBox(width: 12),
           Text(
             "$label: ",
@@ -279,10 +200,7 @@ class BookingDetailsPage extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontSize: 15,
-                color: Color(0xFF424242),
-              ),
+              style: const TextStyle(fontSize: 15, color: Color(0xFF424242)),
             ),
           ),
         ],
@@ -298,8 +216,10 @@ class BookingDetailsPage extends StatelessWidget {
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: ElevatedButton(
+      child: ElevatedButton.icon(
         onPressed: onPressed,
+        icon: Icon(icon, size: 20),
+        label: Text(text),
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
           foregroundColor: Colors.white,
@@ -307,26 +227,25 @@ class BookingDetailsPage extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(30),
           ),
-          elevation: 3,
-          shadowColor: color.withOpacity(0.4),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              text,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildAdminActions(Map<String, dynamic> booking) {
+    return Column(
+      children: [
+        _buildActionButton(
+          text: "Cancel Booking",
+          icon: Icons.cancel,
+          color: Colors.red,
+          onPressed: () {
+            BookingDatabase.cancelBooking(booking['id'], booking['userId']);
+            NotificationService.sendUserNotification(
+                booking['userId'], "Your booking has been canceled.");
+          },
+        ),
+      ],
     );
   }
 }

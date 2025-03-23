@@ -7,8 +7,11 @@ class BookingDetailsPage extends StatefulWidget {
   final String bookingId;
   final Map<String, dynamic> bookingData;
 
-  const BookingDetailsPage(
-      {super.key, required this.bookingId, required this.bookingData});
+  const BookingDetailsPage({
+    super.key,
+    required this.bookingId,
+    required this.bookingData,
+  });
 
   @override
   State<BookingDetailsPage> createState() => _BookingDetailsPageState();
@@ -16,7 +19,20 @@ class BookingDetailsPage extends StatefulWidget {
 
 class _BookingDetailsPageState extends State<BookingDetailsPage> {
   bool _isUpdating = false;
+  bool _showOTPField = false;
   final TextEditingController _otpController = TextEditingController();
+  final TextEditingController _vendorNameController = TextEditingController();
+  final TextEditingController _vendorPhoneController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _showOTPField = widget.bookingData['status'] == 'Accepted';
+    
+    // Initialize vendor information if available
+    _vendorNameController.text = widget.bookingData['vendor_name'] ?? '';
+    _vendorPhoneController.text = widget.bookingData['vendor_phone'] ?? '';
+  }
 
   /// Updates the booking status in Firestore
   Future<void> _updateBookingStatus(String status) async {
@@ -25,19 +41,31 @@ class _BookingDetailsPageState extends State<BookingDetailsPage> {
     setState(() => _isUpdating = true);
 
     try {
+      // Update vendor information along with status
+      Map<String, dynamic> updateData = {
+        'status': status,
+        'vendor_name': _vendorNameController.text.trim(),
+        'vendor_phone': _vendorPhoneController.text.trim(),
+      };
+
       await FirebaseFirestore.instance
           .collection('bookings')
           .doc(widget.bookingId)
-          .update({'status': status});
+          .update(updateData);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Booking $status successfully!")),
         );
 
-        setState(() {}); // Refresh UI after status change
+        // Refresh UI after status change
+        setState(() {
+          if (status == 'Accepted') {
+            _showOTPField = true;
+          }
+        });
 
-        if (status == 'Completed') {
+        if (status == 'Completed' || status == 'Rejected') {
           Navigator.pop(context);
         }
       }
@@ -45,6 +73,34 @@ class _BookingDetailsPageState extends State<BookingDetailsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Failed to update booking: $e")),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUpdating = false);
+    }
+  }
+
+  Future<void> _cancelBooking() async {
+    if (!mounted) return;
+
+    setState(() => _isUpdating = true);
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('bookings')
+          .doc(widget.bookingId)
+          .delete();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Booking cancelled successfully!")),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to cancel booking: $e")),
         );
       }
     } finally {
@@ -92,7 +148,8 @@ class _BookingDetailsPageState extends State<BookingDetailsPage> {
   @override
   Widget build(BuildContext context) {
     String status = widget.bookingData['status'] ?? 'Pending';
-    
+    bool isAdmin = widget.bookingData['role'] == 'admin';
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Booking Details'),
@@ -106,216 +163,155 @@ class _BookingDetailsPageState extends State<BookingDetailsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Service details card
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.only(bottom: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Booking Information",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.purple[900],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: status == 'Accepted' 
-                            ? Colors.green 
-                            : (status == 'Rejected' ? Colors.red : Colors.purple[700]),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          status,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 24),
-                  _infoRow("Service", widget.bookingData['serviceName'] ?? 'N/A'),
-                  _infoRow("Date", widget.bookingData['date'] ?? 'N/A'),
-                  _infoRow("Time", widget.bookingData['time'] ?? 'N/A'),
-                  _infoRow("Contact", widget.bookingData['userContact'] ?? 'N/A'),
-                  _infoRow("Address", widget.bookingData['address'] ?? 'Not provided'),
-                ],
-              ),
-            ),
+            _infoCard(status),
             
-            // OTP section (only shown for Accepted bookings)
-            if (status == 'Accepted')
-              Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(16),
-                margin: const EdgeInsets.only(bottom: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Verify Completion",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.purple[900],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text("Enter OTP to confirm service completion:"),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _otpController,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        hintText: "Enter OTP",
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.purple[700]!),
-                        ),
-                      ),
-                      keyboardType: TextInputType.number,
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 45,
-                      child: ElevatedButton(
-                        onPressed: _isUpdating ? null : _verifyOTP,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.purple[700],
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: _isUpdating
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Text("Verify OTP"),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-            // Action buttons
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Actions",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.purple[900],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 45,
-                          child: ElevatedButton(
-                            onPressed: _isUpdating
-                                ? null
-                                : () => _updateBookingStatus('Accepted'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: const Text("Accept"),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: SizedBox(
-                          height: 45,
-                          child: ElevatedButton(
-                            onPressed: _isUpdating
-                                ? null
-                                : () => _updateBookingStatus('Rejected'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: const Text("Reject"),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+            // Vendor information card
+            if (!isAdmin) _vendorInfoCard(),
+
+            // OTP Section (only for Accepted bookings)
+            if (_showOTPField) _otpVerificationCard(),
+
+            // Action buttons for vendor/admin
+            if (!isAdmin) _vendorActions(status),
+            if (isAdmin) _adminActions(),
           ],
         ),
       ),
     );
   }
 
-  // Helper method for consistent information rows
+  Widget _infoCard(String status) {
+    return Container(
+      width: double.infinity,
+      decoration: _cardDecoration(),
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _titleRow("Booking Information", status),
+          const Divider(height: 24),
+          _infoRow("Service", widget.bookingData['serviceName'] ?? 'N/A'),
+          _infoRow("Date", widget.bookingData['date'] ?? 'N/A'),
+          _infoRow("Time", widget.bookingData['time'] ?? 'N/A'),
+          _infoRow("Contact", widget.bookingData['userContact'] ?? 'N/A'),
+          _infoRow("Address", widget.bookingData['address'] ?? 'Not provided'),
+        ],
+      ),
+    );
+  }
+
+  Widget _vendorInfoCard() {
+    return Container(
+      width: double.infinity,
+      decoration: _cardDecoration(),
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionTitle("Vendor Information"),
+          const SizedBox(height: 16),
+          const Text("Please provide your information:"),
+          const SizedBox(height: 12),
+          
+          // Vendor name field
+          TextField(
+            controller: _vendorNameController,
+            decoration: _inputDecoration("Full Name"),
+            keyboardType: TextInputType.name,
+          ),
+          const SizedBox(height: 12),
+          
+          // Vendor phone field
+          TextField(
+            controller: _vendorPhoneController,
+            decoration: _inputDecoration("Contact Number"),
+            keyboardType: TextInputType.phone,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _otpVerificationCard() {
+    return Container(
+      width: double.infinity,
+      decoration: _cardDecoration(),
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionTitle("Verify Completion"),
+          const SizedBox(height: 12),
+          const Text("Enter OTP to confirm service completion:"),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _otpController,
+            decoration: _inputDecoration("Enter OTP"),
+            keyboardType: TextInputType.number,
+          ),
+          const SizedBox(height: 12),
+          _actionButton("Verify OTP", _verifyOTP, Colors.purple[700]!),
+        ],
+      ),
+    );
+  }
+
+  Widget _vendorActions(String status) {
+    return Container(
+      width: double.infinity,
+      decoration: _cardDecoration(),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionTitle("Actions"),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _actionButton(
+                  "Accept", 
+                  () {
+                    // Validate vendor info before accepting
+                    if (_vendorNameController.text.trim().isEmpty || 
+                        _vendorPhoneController.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Please fill in your name and contact number")),
+                      );
+                      return;
+                    }
+                    _updateBookingStatus('Accepted');
+                  },
+                  Colors.green
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _actionButton(
+                  "Reject",
+                  () => _updateBookingStatus('Rejected'),
+                  Colors.red
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _adminActions() {
+    return Container(
+      width: double.infinity,
+      decoration: _cardDecoration(),
+      padding: const EdgeInsets.all(16),
+      child: _actionButton("Cancel Booking", _cancelBooking, Colors.orange),
+    );
+  }
+
   Widget _infoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -326,18 +322,13 @@ class _BookingDetailsPageState extends State<BookingDetailsPage> {
             width: 70,
             child: Text(
               "$label:",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.purple[700],
-              ),
+              style: _labelStyle(),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontSize: 14,
-              ),
+              style: const TextStyle(fontSize: 14),
             ),
           ),
         ],
@@ -345,9 +336,112 @@ class _BookingDetailsPageState extends State<BookingDetailsPage> {
     );
   }
 
+  BoxDecoration _cardDecoration() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 10,
+          offset: const Offset(0, 5),
+        ),
+      ],
+    );
+  }
+
+  InputDecoration _inputDecoration(String hint) {
+    return InputDecoration(
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      hintText: hint,
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: Colors.purple[700]!),
+      ),
+    );
+  }
+
+  Widget _actionButton(String text, VoidCallback onPressed, Color color) {
+    return SizedBox(
+      width: double.infinity,
+      height: 45,
+      child: ElevatedButton(
+        onPressed: _isUpdating ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        child: _isUpdating && text == "Verify OTP"
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            : Text(text),
+      ),
+    );
+  }
+
+  TextStyle _labelStyle() => TextStyle(
+        fontWeight: FontWeight.bold,
+        color: Colors.purple[700],
+      );
+
+  Widget _sectionTitle(String title) => Text(
+        title,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Colors.purple[900],
+        ),
+      );
+
+  Widget _titleRow(String title, String status) => Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.purple[900],
+            ),
+          ),
+          _statusBadge(status),
+        ],
+      );
+
+  Widget _statusBadge(String status) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: status == 'Accepted'
+              ? Colors.green
+              : (status == 'Rejected' ? Colors.red : Colors.purple[700]),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          status,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
+        ),
+      );
+
   @override
   void dispose() {
     _otpController.dispose();
+    _vendorNameController.dispose();
+    _vendorPhoneController.dispose();
     super.dispose();
   }
 }
