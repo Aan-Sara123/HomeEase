@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.homeeaseapp" // Android namespace
-    compileSdk = 34
+    compileSdk = 35
     ndkVersion = flutter.ndkVersion
 
 
